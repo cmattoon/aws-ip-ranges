@@ -67,6 +67,9 @@ class TextFormatter(Formatter):
     
     def string(self):
         """Implements Formatter.string"""
+        if len(self.data) == 0:
+            return ""
+        
         if type(self.data) is list and dataclasses.is_dataclass(self.data[0]):
             self._as_table = True
             
