@@ -30,8 +30,6 @@ from typing import List, Optional
 
 IP_RANGES_URL = "https://ip-ranges.amazonaws.com/ip-ranges.json"
 
-VALID_FORMATS = ['text', 'json', 'yaml']
-
 RAW_DATA = None # Raw data from IP_RANGES_URL.json()
 ALL_DATA = None # RangeData
 
