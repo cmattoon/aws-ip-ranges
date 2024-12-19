@@ -51,3 +51,37 @@ class Formatter(ABC):
         elif type(self.data) is dict:
             return any(dataclasses.is_dataclass(v) for k,v in self.data.items())
         return dataclasses.is_dataclass(self.data)
+
+    def is_list_of_ipranges(self):
+        return \
+            type(self.data) is list \
+        and len(self.data) > 0 \
+        and hasattr(self.data[0], 'ip_prefix') \
+        and hasattr(self.data[0], 'ipv6_prefix')
+
+    def deduplicate(self):
+        """
+        By default, Formatters simply format the data.
+        However, it's useful for the ones that generate config files to deduplicate the data,
+        since many IP ranges are used by multiple services.
+
+        This is done by simple string matching and isn't subnet-aware.
+        
+        allow 98.88.0.0/13; # AWS AMAZON (us-east-1)
+        allow 98.88.0.0/13; # AWS EC2 (us-east-1)
+        
+        allow 99.82.165.0/24; # AWS AMAZON (us-east-1)
+        allow 99.82.165.0/24; # AWS GLOBALACCELERATOR (us-east-1)
+        """
+        if not self.is_list_of_ipranges():
+            raise ValueError("This function is only meant to deduplicate IPRange data")
+        
+        data = {}
+        for ip in self.data:
+            prefix = ip.ip_prefix or ip.ipv6_prefix
+            if prefix not in data:
+                data[prefix] = []
+            data[prefix].append(ip)
+        return data
+
+                
