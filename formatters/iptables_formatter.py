@@ -10,7 +10,8 @@ class IptablesFormatter(Formatter):
     """
     
     code = 'iptables'
-    
+    rule_template = "iptables -A OUTPUT -d {ip} -p tcp --dport {port} -j ACCEPT"
+
     def string(self):
         data = self.deduplicate()
 
@@ -18,7 +19,6 @@ class IptablesFormatter(Formatter):
         ipv6 = sorted(filter(lambda x: data[x][0].ipv6_prefix, data))
 
         rules = ""
-
         for ip in ipv4:
             items = data[ip]
             ports = set([])
@@ -27,9 +27,9 @@ class IptablesFormatter(Formatter):
                 for p in self.port_map(i.service):
                     ports.add(p)
                 services.append(f"{i.service}/{i.region}")
-            for p in ports:
+            for port in ports:
                 rules += f"# Allow outbound access to AWS {','.join(services)}\n"
-                rules += f"iptables -A OUTPUT -d {ip} -p tcp --dport {p} -j ACCEPT\n"
+                rules += self.rule_template.format(ip=ip, port=port) + "\n"
         return rules
     
     def port_map(self, aws_service_name: str) -> List[int]:

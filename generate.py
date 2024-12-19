@@ -16,6 +16,7 @@ Options:
     -b <border-group>, --border-group <border-group>  The network border group to filter by.
     -f <format>, --format <format>                    Output format [default: text].
     -o <outfile>, --output <outfile>                  Writes results to a file [default: stdout].
+    --iptables-rule-template <rule-template>          Set the iptables rule template. [default: iptables -A OUTPUT -d {ip} -p tcp --dport {port} -j ACCEPT]
 """
 import sys
 import re
@@ -253,10 +254,16 @@ def encode_text(data):
 
     raise ValueError(f"Unsupported data type {type(data)}")
 
-def encode_data(data, fmt: str = 'json') -> str:
+def encode_data(data, opts) -> str:
+    fmt = opts['--format']
     if fmt not in formatters.List():
         raise ValueError(f"Invalid format type '{fmt}'. Valid values are: {formatters.List()}")
-    return formatters.Get(fmt, data).string()
+    
+    formatter = formatters.Get(fmt, data)
+    if fmt == 'iptables':
+        formatter.rule_template = opts['--iptables-rule-template']
+        
+    return formatter.string()
 
 # OUTPUT_FORMATS = {
 #     'json': lambda d: json.dumps(d, cls=EnhancedJSONEncoder),
@@ -297,7 +304,7 @@ def cmd_query_data(opts):
                 for ip6 in r.ipv6:
                     results.append(ip6)
 
-    write_data(opts, encode_data(results, opts['--format']))
+    write_data(opts, encode_data(results, opts))
     
     return results
 
@@ -306,7 +313,7 @@ def cmd_list(opts):
     things_to_list = {'regions': ALL_REGIONS, 'services': ALL_SERVICES, 'border-groups': ALL_NETWORK_BORDER_GROUPS}
     for k, v in opts.items():
         if k in things_to_list and opts[k] is True:
-            return write_data(opts, encode_data(things_to_list[k], opts['--format']))
+            return write_data(opts, encode_data(things_to_list[k], opts))
     raise RuntimeError(f"Expected to match one of {things_to_list.keys()}, but apparently that didn't happen.")
 
 def main(opts):
@@ -319,8 +326,8 @@ def main(opts):
 
 if __name__ == '__main__':
     opts = docopt(__doc__)
-    #print(opts)
-
+    # print(opts)
+    # exit()
     data = download()
 
     # Sort the lists populated during the download() process.
