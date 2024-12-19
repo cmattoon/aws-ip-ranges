@@ -6,8 +6,8 @@ from .formatter import Formatter
 class JSONEncoder(json.JSONEncoder):    
     def default(self, o):
         """Support json.dumps on dataclasses"""
-        if self.is_dataclass():
-            return self.asdict()
+        if dataclasses.is_dataclass(o):
+            return dataclasses.asdict(o)
         return super().default(o)    
 
 

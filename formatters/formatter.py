@@ -46,5 +46,8 @@ class Formatter(ABC):
 
     def is_dataclass(self):
         """Return True if self.data is a dataclass"""
+        if type(self.data) is list:
+            return any(dataclasses.is_dataclass(i) for i in self.data)
+        elif type(self.data) is dict:
+            return any(dataclasses.is_dataclass(v) for k,v in self.data.items())
         return dataclasses.is_dataclass(self.data)
-    

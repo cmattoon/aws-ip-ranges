@@ -6,7 +6,7 @@ Tools for working with the AWS IP list.
 Usage:
     generate.py (-h | --help)
     generate.py query [--region <region> ... ] [--service <service> ... ] [--border-group <border-group> ... ] [(--only-ipv4|--only-ipv6)] [options]
-    generate.py list (regions|services|border-groups)
+    generate.py list (regions|services|border-groups) [options]
 
 
 Options:
@@ -27,6 +27,8 @@ from argparse import ArgumentParser
 from dataclasses import dataclass
 from docopt import docopt
 from typing import List, Optional
+
+import formatters
 
 IP_RANGES_URL = "https://ip-ranges.amazonaws.com/ip-ranges.json"
 
@@ -251,17 +253,22 @@ def encode_text(data):
 
     raise ValueError(f"Unsupported data type {type(data)}")
 
-OUTPUT_FORMATS = {
-    'json': lambda d: json.dumps(d, cls=EnhancedJSONEncoder),
-    'yaml': lambda d: yaml.dump(d, default_flow_style=False, Dumper=EnhancedYAMLDumper),
-    'text': encode_text
-}
-def encode_data(data, fmt: str = 'json'):
-    try:
-        func = OUTPUT_FORMATS[fmt]
-    except KeyError:
-        raise ValueError(f"Invalid output format '{fmt}'. Valid options are: {OUTPUT_FORMATS}")
-    return func(data)
+def encode_data(data, fmt: str = 'json') -> str:
+    if fmt not in formatters.List():
+        raise ValueError(f"Invalid format type '{fmt}'. Valid values are: {formatters.List()}")
+    return formatters.Get(fmt, data).string()
+
+# OUTPUT_FORMATS = {
+#     'json': lambda d: json.dumps(d, cls=EnhancedJSONEncoder),
+#     'yaml': lambda d: yaml.dump(d, default_flow_style=False, Dumper=EnhancedYAMLDumper),
+#     'text': encode_text
+# }
+# def encode_data(data, fmt: str = 'json'):
+#     try:
+#         func = OUTPUT_FORMATS[fmt]
+#     except KeyError:
+#         raise ValueError(f"Invalid output format '{fmt}'. Valid options are: {OUTPUT_FORMATS}")
+#     return func(data)
 
 def write_data(opts, data):
     if opts['--output'] == 'stdout':
@@ -312,7 +319,7 @@ def main(opts):
 
 if __name__ == '__main__':
     opts = docopt(__doc__)
-    print(opts)
+    #print(opts)
 
     data = download()
 

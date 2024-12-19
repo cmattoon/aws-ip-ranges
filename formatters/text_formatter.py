@@ -1,4 +1,5 @@
 import dataclasses
+
 from typing import Optional, List
 
 from .formatter import Formatter
@@ -20,6 +21,7 @@ class TextFormatter(Formatter):
             header_row (bool): Whether self.data[0] is a header row.
             headers (List[str]): Supply explicit headers for when header_row is False
         """
+
         row = self.data[0]
         if self.is_dataclass():
             fields = dataclasses.fields(row)
@@ -29,6 +31,7 @@ class TextFormatter(Formatter):
                 headers = [str(c) for c in row]
             else:
                 headers = ['??' for _ in range(len(row))]
+
         pads = [len(h) for h in headers]
         rows = []
 
@@ -36,10 +39,12 @@ class TextFormatter(Formatter):
         
         for item in data:
             if dataclasses.is_dataclass(item):
+                cols = []
                 for i, field in enumerate(dataclasses.fields(item)):
-                    value = getattr(item, field.name)
-                    pads[i] = max(pads[i], len(str(value)))
-                    rows.append(value)
+                    value = str(getattr(item, field.name))
+                    pads[i] = max(pads[i], len(value))
+                    cols.append(value)
+                rows.append(cols)
             else:
                 _row = []
                 for i, col in enumerate(item):
@@ -49,17 +54,30 @@ class TextFormatter(Formatter):
                 rows.append(_row)
 
         table = " | ".join(header.ljust(pads[i]) for i, header in enumerate(headers)) + "\n"
-        table += "-+-".join("-" * width for width in pads) 
-        data_rows = "\n".join(
-            " | ".join(row[i].ljust(pads[i]) for i, _ in enumerate(headers))
-            for row in rows
-        )
-        return f"{table}\n{data_rows}"
+        table += "-+-".join("-" * width for width in pads) + "\n"
 
+        for row in rows:
+            table += " | ".join(str(row[i]).ljust(pads[i]) for i, _ in enumerate(headers)) + "\n"
+        # data_rows = "\n".join(
+        #     " | ".join(row[i].ljust(pads[i]) for i, _ in enumerate(headers))
+        #     for row in rows
+        # )
+        #return f"{table}\n{data_rows}"
+        return table
+    
     def string(self):
         """Implements Formatter.string"""
+        if type(self.data) is list and dataclasses.is_dataclass(self.data[0]):
+            self._as_table = True
+            
         if self._as_table:
             return self.table()
+
+        # If it's a list of strings, print them out line by line
+        if type(self.data) is list:
+            for item in self.data:
+                print(item)
+            return
         return str(self.data)
 
 
